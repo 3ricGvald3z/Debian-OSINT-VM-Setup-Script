@@ -134,19 +134,14 @@ install_latest_go() {
     sudo tar -C /usr/local -xzf /tmp/go.tar.gz
     rm /tmp/go.tar.gz
     
-    # Set up Go environment variables for the current user and session
-    export GOROOT=/usr/local/go
-    export GOPATH="$HOME/go"
-    export PATH="$PATH:$GOROOT/bin:$GOPATH/bin"
-    
     # Add Go to the user's .bashrc for persistent access
     log INFO "Adding Go to the PATH in ~/.bashrc"
-    echo "" >> "$HOME/.bashrc"
-    echo "# GoLang Path" >> "$HOME/.bashrc"
-    echo "export GOROOT=/usr/local/go" >> "$HOME/.bashrc"
-    echo "export GOPATH=\$HOME/go" >> "$HOME/.bashrc"
-    echo "export PATH=\$PATH:\$GOROOT/bin:\$GOPATH/bin" >> "$HOME/.bashrc"
-    
+    echo "" | sudo -u "$SUDO_USER" tee -a "$HOME/.bashrc" > /dev/null
+    echo "# GoLang Path" | sudo -u "$SUDO_USER" tee -a "$HOME/.bashrc" > /dev/null
+    echo "export GOROOT=/usr/local/go" | sudo -u "$SUDO_USER" tee -a "$HOME/.bashrc" > /dev/null
+    echo "export GOPATH=\$HOME/go" | sudo -u "$SUDO_USER" tee -a "$HOME/.bashrc" > /dev/null
+    echo "export PATH=\$PATH:\$GOROOT/bin:\$GOPATH/bin" | sudo -u "$SUDO_USER" tee -a "$HOME/.bashrc" > /dev/null
+
     log SUCCESS "Go installed and path updated."
 }
 
@@ -154,9 +149,9 @@ install_latest_go() {
 # --- Section 2: User-specific Tool Installation ---
 install_pipx_tools() {
     log INFO "Installing Pipx tools..."
-    pipx ensurepath
-    # Pipx can install multiple packages at once.
-    pipx install \
+    # The commands are now run as the non-root user.
+    sudo -u "$SUDO_USER" pipx ensurepath
+    sudo -u "$SUDO_USER" pipx install \
         ghunt socialscan holehe xeuledoc waybackpy \
         changedetection.io archivebox internetarchive search-that-hash \
         name-that-hash h8mail domain-stats gitem ignorant \
@@ -168,27 +163,25 @@ install_pipx_tools() {
 
 install_go_tools() {
     log INFO "Installing Go tools..."
-    export GOPATH="$HOME/go"
-    export PATH="$PATH:$GOPATH/bin"
-    # Consolidate go install commands.
-    go install github.com/tomnomnom/waybackurls@latest
-    go install -v github.com/owasp-amass/amass/v4/...@master
-    go install github.com/jaeles-project/gospider@latest
-    go install github.com/hakluke/hakrawler@latest
-    go install github.com/tomnomnom/httprobe@master
-    go install -v github.com/owasp-amass/oam-tools/cmd/...@master
-    go install github.com/projectdiscovery/katana/cmd/katana@latest
-    go install github.com/xxxserxxx/gotop/v4/cmd/gotop@latest
-    go install github.com/ndelphit/apkurlgrep@latest
-    go install github.com/davecheney/httpstat@latest
-    go install github.com/trap-bytes/hauditor@latest
-    go install github.com/g0ldencybersec/gungnir/cmd/gungnir@latest
-    go install github.com/tantosec/oneshell@latest
+    # The commands are now run as the non-root user.
+    sudo -u "$SUDO_USER" go install github.com/tomnomnom/waybackurls@latest
+    sudo -u "$SUDO_USER" go install -v github.com/owasp-amass/amass/v4/...@master
+    sudo -u "$SUDO_USER" go install github.com/jaeles-project/gospider@latest
+    sudo -u "$SUDO_USER" go install github.com/hakluke/hakrawler@latest
+    sudo -u "$SUDO_USER" go install github.com/tomnomnom/httprobe@master
+    sudo -u "$SUDO_USER" go install -v github.com/owasp-amass/oam-tools/cmd/...@master
+    sudo -u "$SUDO_USER" go install github.com/projectdiscovery/katana/cmd/katana@latest
+    sudo -u "$SUDO_USER" go install github.com/xxxserxxx/gotop/v4/cmd/gotop@latest
+    sudo -u "$SUDO_USER" go install github.com/ndelphit/apkurlgrep@latest
+    sudo -u "$SUDO_USER" go install github.com/davecheney/httpstat@latest
+    sudo -u "$SUDO_USER" go install github.com/trap-bytes/hauditor@latest
+    sudo -u "$SUDO_USER" go install github.com/g0ldencybersec/gungnir/cmd/gungnir@latest
+    sudo -u "$SUDO_USER" go install github.com/tantosec/oneshell@latest
     
     # Handle gowitness separately due to its specific installation method.
     wget -q --show-progress https://github.com/sensepost/gowitness/releases/download/2.5.1/gowitness-2.5.1-linux-amd64
-    mv gowitness-2.5.1-linux-amd64 "$GOPATH/bin/gowitness"
-    chmod +x "$GOPATH/bin/gowitness"
+    sudo -u "$SUDO_USER" mv gowitness-2.5.1-linux-amd64 "$HOME/go/bin/gowitness"
+    sudo -u "$SUDO_USER" chmod +x "$HOME/go/bin/gowitness"
     
     log SUCCESS "Go tools installed."
 }
@@ -199,33 +192,32 @@ install_git_repo() {
     local repo_dir=$(basename "$repo_url" .git)
     local venv_name="$2"
     
-    if [ -d "$repo_dir" ]; then
+    if sudo -u "$SUDO_USER" [ -d "$HOME/programs/$repo_dir" ]; then
         log WARN "Directory $repo_dir already exists. Skipping git clone."
         return
     fi
     
     log INFO "Cloning and installing $repo_dir..."
-    git clone "$repo_url"
-    cd "$repo_dir"
+    sudo -u "$SUDO_USER" git clone "$repo_url" "$HOME/programs/$repo_dir"
     
-    if [ -f "requirements.txt" ]; then
-        python3 -m venv "$venv_name"
-        source "$venv_name/bin/activate"
-        pip install -r requirements.txt
-        deactivate
-    elif [ -f "Pipfile" ]; then
-        # Handle poetry projects
-        poetry install
-    fi
-    cd - > /dev/null # Go back to the previous directory silently
+    (
+        cd "$HOME/programs/$repo_dir"
+        if sudo -u "$SUDO_USER" [ -f "requirements.txt" ]; then
+            sudo -u "$SUDO_USER" python3 -m venv "$venv_name"
+            source "$venv_name/bin/activate"
+            pip install -r requirements.txt
+            deactivate
+        elif sudo -u "$SUDO_USER" [ -f "Pipfile" ]; then
+            poetry install
+        fi
+    )
     log SUCCESS "$repo_dir installed."
 }
 
 # Install Python and other Git-based tools
 install_git_and_python_tools() {
     log INFO "Cloning Git repositories and installing Python tools..."
-    mkdir -p "$HOME/programs"
-    cd "$HOME/programs"
+    sudo -u "$SUDO_USER" mkdir -p "$HOME/programs"
     
     # Use the function to install each tool.
     install_git_repo "https://github.com/AmIJesse/Elasticsearch-Crawler.git" "es-crawler-env"
@@ -233,8 +225,8 @@ install_git_and_python_tools() {
     install_git_repo "https://github.com/Lazza/Carbon14.git" "carbon14-env"
     install_git_repo "https://github.com/soxoj/maigret.git" "maigret-env"
     (
-        cd maigret
-        python3 -m venv maigret-env
+        sudo -u "$SUDO_USER" cd "$HOME/programs/maigret"
+        sudo -u "$SUDO_USER" python3 -m venv maigret-env
         source maigret-env/bin/activate
         pip install .
         deactivate
@@ -247,18 +239,16 @@ install_git_and_python_tools() {
     install_git_repo "https://github.com/C3n7ral051nt4g3ncy/WhatsMyName-Python.git" "wmn-python-env"
     install_git_repo "https://github.com/GuidoBartoli/sherloq.git" "sherloq-env"
     (
-        cd sherloq/gui
-        python3 -m venv sherloq-env
+        sudo -u "$SUDO_USER" cd "$HOME/programs/sherloq/gui"
+        sudo -u "$SUDO_USER" python3 -m venv sherloq-env
         source sherloq-env/bin/activate
         pip install -r requirements.txt
         deactivate
-        cd - > /dev/null
     )
     install_git_repo "https://github.com/OSINT-TECHNOLOGIES/dpulse.git" "dpulse-env"
     (
-        cd dpulse
+        sudo -u "$SUDO_USER" cd "$HOME/programs/dpulse"
         poetry install
-        cd - > /dev/null
     )
     install_git_repo "https://github.com/chm0dx/creepyCrawler.git" "creepycrawler-env"
     install_git_repo "https://github.com/N0rz3/Eyes.git" "eyes-env"
@@ -273,22 +263,22 @@ install_git_and_python_tools() {
 
     # Handle phoneinfoga separately as it's a binary download.
     log INFO "Downloading and installing phoneinfoga..."
-    mkdir -p phoneinfoga
+    sudo -u "$SUDO_USER" mkdir -p "$HOME/programs/phoneinfoga"
     (
-        cd phoneinfoga
+        cd "$HOME/programs/phoneinfoga"
         wget -q --show-progress https://github.com/sundowndev/phoneinfoga/releases/download/v2.10.8/phoneinfoga_Linux_x86_64.tar.gz
-        tar -xzvf phoneinfoga_Linux_x86_64.tar.gz
+        sudo -u "$SUDO_USER" tar -xzvf phoneinfoga_Linux_x86_64.tar.gz
         rm phoneinfoga_Linux_x86_64.tar.gz
     )
     log SUCCESS "phoneinfoga installed."
 
     # Handle gophish separately as it's a zip download.
     log INFO "Downloading and installing gophish..."
-    mkdir -p gophish
+    sudo -u "$SUDO_USER" mkdir -p "$HOME/programs/gophish"
     (
-        cd gophish
+        cd "$HOME/programs/gophish"
         wget -q --show-progress https://github.com/gophish/gophish/releases/download/v0.12.1/gophish-v0.12.1-linux-64bit.zip
-        unzip gophish-v0.12.1-linux-64bit.zip
+        sudo -u "$SUDO_USER" unzip gophish-v0.12.1-linux-64bit.zip
         rm gophish-v0.12.1-linux-64bit.zip
     )
     log SUCCESS "gophish installed."
@@ -296,20 +286,20 @@ install_git_and_python_tools() {
     # Handle gron separately as it's a tgz download.
     log INFO "Downloading and installing gron..."
     wget -q --show-progress https://github.com/tomnomnom/gron/releases/download/v0.7.1/gron-linux-amd64-0.7.1.tgz
-    tar xzf gron-linux-amd64-0.7.1.tgz
+    sudo -u "$SUDO_USER" tar xzf gron-linux-amd64-0.7.1.tgz -C "$HOME/programs"
     rm gron-linux-amd64-0.7.1.tgz
     log SUCCESS "gron installed."
 
     # Handle yt-dlp separately as it has dependencies.
     log INFO "Downloading and installing yt-dlp..."
-    mkdir -p yt-dlp
+    sudo -u "$SUDO_USER" mkdir -p "$HOME/programs/yt-dlp"
     (
-        cd yt-dlp
+        cd "$HOME/programs/yt-dlp"
         wget -q --show-progress https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp
         wget -q --show-progress https://github.com/yt-dlp/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz
-        tar -xf ffmpeg-master-latest-linux64-gpl.tar.xz
+        sudo -u "$SUDO_USER" tar -xf ffmpeg-master-latest-linux64-gpl.tar.xz
         rm ffmpeg-master-latest-linux64-gpl.tar.xz
-        chmod +x yt-dlp ffmpeg*/bin/*
+        sudo -u "$SUDO_USER" chmod +x yt-dlp ffmpeg*/bin/*
     )
     log SUCCESS "yt-dlp installed."
 
@@ -321,29 +311,31 @@ install_git_and_python_tools() {
 
     # Clone all resource repos into a single directory
     log INFO "Cloning OSINT resource repositories..."
-    mkdir -p "$HOME/resources"
-    cd "$HOME/resources"
+    sudo -u "$SUDO_USER" mkdir -p "$HOME/resources"
     
-    git clone https://github.com/swisskyrepo/InternalAllTheThings.git
-    git clone https://github.com/andrewjkerr/security-cheatsheets.git
-    git clone https://github.com/cipher387/Dorks-collections-list.git
-    git clone https://github.com/cipher387/osint_stuff_tool_collection.git
-    git clone https://github.com/ExploitXpErtz/WebCam-Google-Shodan-Dorks.git
-    git clone https://github.com/cipher387/cheatsheets.git
-    git clone https://github.com/vaib25vicky/awesome-mobile-security.git
-    
-    mkdir -p tor-links
     (
-        cd tor-links
-        git clone https://github.com/01Kevin01/OnionLinksV3.git
-        git clone https://github.com/fastfire/deepdarkCTI.git
+        cd "$HOME/resources"
+        sudo -u "$SUDO_USER" git clone https://github.com/swisskyrepo/InternalAllTheThings.git
+        sudo -u "$SUDO_USER" git clone https://github.com/andrewjkerr/security-cheatsheets.git
+        sudo -u "$SUDO_USER" git clone https://github.com/cipher387/Dorks-collections-list.git
+        sudo -u "$SUDO_USER" git clone https://github.com/cipher387/osint_stuff_tool_collection.git
+        sudo -u "$SUDO_USER" git clone https://github.com/ExploitXpErtz/WebCam-Google-Shodan-Dorks.git
+        sudo -u "$SUDO_USER" git clone https://github.com/cipher387/cheatsheets.git
+        sudo -u "$SUDO_USER" git clone https://github.com/vaib25vicky/awesome-mobile-security.git
+        
+        sudo -u "$SUDO_USER" mkdir -p tor-links
+        (
+            cd tor-links
+            sudo -u "$SUDO_USER" git clone https://github.com/01Kevin01/OnionLinksV3.git
+            sudo -u "$SUDO_USER" git clone https://github.com/fastfire/deepdarkCTI.git
+        )
     )
     
     # Amass fresh resolvers
-    mkdir -p "$HOME/.config/amass"
+    sudo -u "$SUDO_USER" mkdir -p "$HOME/.config/amass"
     (
         cd "$HOME/.config/amass"
-        git clone https://github.com/proabiral/Fresh-Resolvers.git
+        sudo -u "$SUDO_USER" git clone https://github.com/proabiral/Fresh-Resolvers.git
     )
     log SUCCESS "Git repositories cloned."
 
@@ -351,10 +343,8 @@ install_git_and_python_tools() {
     log INFO "Installing Ronin..."
     wget -q --show-progress https://raw.githubusercontent.com/ronin-rb/scripts/main/ronin-install.sh
     chmod +x ronin-install.sh
-    bash ronin-install.sh
+    sudo -u "$SUDO_USER" bash ronin-install.sh
     log SUCCESS "Ronin installed."
-
-    cd - > /dev/null
 }
 
 # --- Main script execution flow ---
