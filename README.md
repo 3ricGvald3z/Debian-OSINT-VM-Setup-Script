@@ -1,4 +1,4 @@
-# :computer: OSINT VM Setup Script
+# :computer: Debian OSINT VM Setup Script
 
 Automating the dark arts. This script is designed to quickly and efficiently provision a Debian-based virtual machine with a comprehensive suite of tools for Open-Source Intelligence (OSINT) and cybersecurity.
 
