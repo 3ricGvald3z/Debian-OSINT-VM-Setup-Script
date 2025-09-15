@@ -26,6 +26,8 @@ Automating the dark arts. This script is designed to quickly and efficiently pro
 
 </pre>
 
+</div>
+
 ### :floppy_disk: Features
 
 This script is a powerful, all-in-one solution that performs the following tasks:
