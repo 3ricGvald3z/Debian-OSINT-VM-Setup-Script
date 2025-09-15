@@ -49,7 +49,7 @@ This script is a powerful, all-in-one solution that performs the following tasks
 
 ### :hammer_and_wrench: How to Use
 
-#### 1. Download the Script & [Golang](https://go.dev/dl/)
+#### 1. Download the Script
 
 Clone this repository or simply download the `install_osint_vm.sh` file.
 
