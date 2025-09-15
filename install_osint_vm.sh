@@ -119,6 +119,38 @@ install_mongodb() {
     log SUCCESS "MongoDB installed and configured."
 }
 
+# Install the latest version of Go
+install_latest_go() {
+    log INFO "Installing the latest version of Go..."
+    # Get the latest Go version from the official site
+    LATEST_GO_VERSION=$(curl -s "https://go.dev/VERSION?m=text")
+    GO_URL="https://go.dev/dl/$LATEST_GO_VERSION.linux-amd64.tar.gz"
+    
+    # Remove any previous Go installation
+    sudo rm -rf /usr/local/go
+    
+    # Download and extract the latest Go tarball
+    wget -q --show-progress "$GO_URL" -O /tmp/go.tar.gz
+    sudo tar -C /usr/local -xzf /tmp/go.tar.gz
+    rm /tmp/go.tar.gz
+    
+    # Set up Go environment variables for the current user and session
+    export GOROOT=/usr/local/go
+    export GOPATH="$HOME/go"
+    export PATH="$PATH:$GOROOT/bin:$GOPATH/bin"
+    
+    # Add Go to the user's .bashrc for persistent access
+    log INFO "Adding Go to the PATH in ~/.bashrc"
+    echo "" >> "$HOME/.bashrc"
+    echo "# GoLang Path" >> "$HOME/.bashrc"
+    echo "export GOROOT=/usr/local/go" >> "$HOME/.bashrc"
+    echo "export GOPATH=\$HOME/go" >> "$HOME/.bashrc"
+    echo "export PATH=\$PATH:\$GOROOT/bin:\$GOPATH/bin" >> "$HOME/.bashrc"
+    
+    log SUCCESS "Go installed and path updated."
+}
+
+
 # --- Section 2: User-specific Tool Installation ---
 install_pipx_tools() {
     log INFO "Installing Pipx tools..."
@@ -333,6 +365,7 @@ main() {
     install_debian_packages
     configure_services
     install_mongodb
+    install_latest_go
     install_ruby_gems_and_snaps
     install_pipx_tools
     install_go_tools
