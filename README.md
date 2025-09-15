@@ -125,6 +125,8 @@ The script is modular and organized into functions for clarity.
 Powered by open-source tools and a desire for automation.
 
 </div>
+<div align="center"> <pre> 
+
   
             ^
           /   \
@@ -139,6 +141,8 @@ Powered by open-source tools and a desire for automation.
        ( ))   //
         //   ((
 
+</pre>
 
+</div>
 
 
