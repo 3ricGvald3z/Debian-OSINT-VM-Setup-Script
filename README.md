@@ -2,32 +2,6 @@
 
 Automating the dark arts. This script is designed to quickly and efficiently provision a Debian-based virtual machine with a comprehensive suite of tools for Open-Source Intelligence (OSINT) and cybersecurity.
 
-<div align="center"> <pre> 
-              _,._      
-  .||,       /_ _\\     
- \.`',/      |'L'| |    
- = ,. =      | -,| L    
- / || \    ,-'\"/,'`.   
-   ||     ,'   `,,. `.  
-   ,|____,' , ,;' \| |  
-  (3|\    _/|/'   _| |  
-   ||/,-''  | >-'' _,\\ 
-   ||'      ==\ ,-'  ,' 
-   ||       |  V \ ,|   
-   ||       |    |` |   
-   ||       |    |   \  
-   ||       |    \    \ 
-   ||       |     |    \
-   ||       |      \_,-'
-   ||       |___,,--")_\
-   ||         |_|   ccc/
-   ||        ccc/       
-   ||
-
-</pre>
-
-</div>
-
 ### :floppy_disk: Features
 
 This script is a powerful, all-in-one solution that performs the following tasks:
